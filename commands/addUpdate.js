@@ -26,7 +26,7 @@ exports.builder = (yargs) => {
       },
       overwrite: {
         alias: 'o',
-        default: false,
+        default: true,
         describe: 'Whether or not to overwrite the parameter.',
       },
     })
