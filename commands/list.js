@@ -2,7 +2,7 @@ const aws = require('aws-sdk');
 const ssm = new aws.SSM({ apiVersion: '2014-11-06' });
 const errResp = require('../utils/errors').errorResp;
 
-let getParamList = [];
+let getParamList = {};
 
 exports.command = 'list';
 exports.aliases = ['ls', 'get'];
@@ -44,11 +44,16 @@ const getParams = async (yargs) => {
             // redact certificate values for consistent formatting when listing to table
             data.Parameters[i].Value = 'CERT REDACTED';
           }
+          /* 
           getParamList.push({
             key: data.Parameters[i].Name.replace(`/${yargs.p}/`, ''),
             value: data.Parameters[i].Value,
             type: data.Parameters[i].Type,
           });
+          */
+
+         // Generating key:value array for saving as single JSON object in a file
+          getParamList[data.Parameters[i].Name.replace(`/${yargs.p}/`, '')] = data.Parameters[i].Value;
         }
         if (data.NextToken) {
           getAWSParams(data.NextToken);

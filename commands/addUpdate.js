@@ -37,23 +37,19 @@ exports.handler = async (argv) => {
 };
 
 const addUpdateParams = async (yargs) => {
-  const params = JSON.parse(fs.readFileSync(yargs.file));
-  let awsParams = {};
-  for (let i = 0; i < params.length; i++) {
-    awsParams['Name'] = `/${yargs.path}/${params[i].key}`;
-    awsParams['Value'] = params[i].value;
-    awsParams['Type'] = params[i].type;
+  const params = JSON.parse(fs.readFileSync(yargs.file, 'utf8'));
+  for(var key in params){
+    let awsParams = {};
+    awsParams['Name'] = `/${yargs.path}/${key}`;
+    awsParams['Value'] = params[key];
+    awsParams['Type'] = 'SecureString';
     awsParams['Overwrite'] = yargs.o;
-    if (params[i].type === 'SecureString') {
-      awsParams['KeyId'] = yargs.k;
-    } else {
-      delete awsParams['KeyId'];
-    }
+    awsParams['KeyId'] = yargs.k
     ssm.putParameter(awsParams, (err, data) => {
       if (err) {
         errResp(err.code, err.stack, awsParams)
       } else {
-        console.info(`Added: ${awsParams.Name}`)
+        console.log(`Added (Updated): /${yargs.path}/${key}`)
       }
     })
     await sleep(1000)
