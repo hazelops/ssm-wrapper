@@ -9,12 +9,17 @@ exports.aliases = ['update'];
 exports.describe = 'add or update parameters';
 exports.builder = (yargs) => {
   yargs
-    .example('$0 -f /path/to/parameters.json -p my-service -k alias/alias/kms-key-alias')
+    .example('$0 -f /path/to/parameters.json -p my-service -k alias/alias/kms-key-alias --fmt simple')
     .example('$0 -f /path/to/parameters.json -p my-service -k alias/alias/kms-key-alias -o true')
     .options({
       file: {
         alias: 'f',
         describe: 'JSON file with params to add.',
+      },
+      format: {
+        alias: 'fmt',
+        default: 'default',
+        describe: 'JSON file format. Accepts `simple, default`.',
       },
       path: {
         alias: 'p',
@@ -36,23 +41,51 @@ exports.handler = async (argv) => {
   await addUpdateParams(argv);
 };
 
+
 const addUpdateParams = async (yargs) => {
-  const params = JSON.parse(fs.readFileSync(yargs.file, 'utf8'));
-  for(var key in params){
+  if (yargs.format === 'default') {
     let awsParams = {};
-    awsParams['Name'] = `/${yargs.path}/${key}`;
-    awsParams['Value'] = params[key];
-    awsParams['Type'] = 'SecureString';
-    awsParams['Overwrite'] = yargs.o;
-    awsParams['KeyId'] = yargs.k
-    ssm.putParameter(awsParams, (err, data) => {
-      if (err) {
-        errResp(err.code, err.stack, awsParams)
+    const params = JSON.parse(fs.readFileSync(yargs.file));
+    //let awsParams = {};
+    for (let i = 0; i < params.length; i++) {
+      awsParams['Name'] = `/${yargs.path}/${params[i].key}`;
+      awsParams['Value'] = params[i].value;
+      awsParams['Type'] = params[i].type;
+      awsParams['Overwrite'] = yargs.o;
+      if (params[i].type === 'SecureString') {
+        awsParams['KeyId'] = yargs.k;
       } else {
-        console.log(`Added (Updated): /${yargs.path}/${key}`)
+        delete awsParams['KeyId'];
       }
-    })
-    await sleep(1000)
+      ssm.putParameter(awsParams, (err, data) => {
+        if (err) {
+          errResp(err.code, err.stack, awsParams)
+        } else {
+          console.info(`Added: ${awsParams.Name}`)
+        }
+      })
+      await sleep(1700)
+    }
+  }
+  if (yargs.format === 'simple') {
+    const params = JSON.parse(fs.readFileSync(yargs.file, 'utf8'));
+    let awsParams = {};
+    for(var key in params){
+      let name = `/${yargs.path}/${key}`;
+      awsParams['Name'] = name;
+      awsParams['Value'] = params[key];
+      awsParams['Type'] = 'SecureString';
+      awsParams['Overwrite'] = yargs.o;
+      awsParams['KeyId'] = yargs.k
+      ssm.putParameter(awsParams, (err, data) => {
+        if (err) {
+          errResp(err.code, err.stack, awsParams)
+        } else {
+          console.info(`Added (Updated):`+ name)
+        }
+      })
+      await sleep(1700)
+    }
   }
   process.exit(0)
 };
