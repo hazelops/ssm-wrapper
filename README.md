@@ -41,12 +41,14 @@ Once this repository is cloned down, be sure to run the following commands from 
 | --key | -k | The KMS key to encrypt the param(s) with. | yes |
 | --path | -p | The path to add or update parameters at. | yes |
 | --overwrite | -o | Whether to overwrite or not. Defaults to false. | no |
+| --format | --fmt | JSON file format. Accepts `simple, default`. | no |
 
 #### List
 | Flag | Alias | Description | Required |
 | ----- | ----- | ----------- | -------- |
 | --path | -p | The path to add or update parameters at. | yes |
 | --result | -r | Output result format. Defaults to formatted table. Accepts `json, table`. | no |
+| --format | -f | The Output Json format. Accepts `simple, default`. | no |
 
 #### Delete
 | Flag | Alias | Description | Required |
@@ -116,6 +118,14 @@ Can contain one or more parameters.
 ]
 ```
 
+`simple` format:
+```json
+{
+    "k1": "10101010",
+    "k2": "20202020",
+    "k3": "30303030"
+}
+```
 ---
 
 ### AWS API Errors

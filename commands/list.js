@@ -2,7 +2,7 @@ const aws = require('aws-sdk');
 const ssm = new aws.SSM({ apiVersion: '2014-11-06' });
 const errResp = require('../utils/errors').errorResp;
 
-let getParamList = [];
+let getParamList;
 
 exports.command = 'list';
 exports.aliases = ['ls', 'get'];
@@ -15,6 +15,11 @@ exports.builder = (yargs) => {
       path: {
         alias: 'p',
         describe: 'The SSM path to list from.'
+      },
+      format: {
+        alias: 'f',
+        default: 'default',
+        describe: 'The Output Json format. Accepts `simple, default`. '
       },
       result: {
         alias: 'r',
@@ -33,6 +38,12 @@ const getParams = async (yargs) => {
   awsParams['Path'] = `/${yargs.p}`;
   awsParams['Recursive'] = true;
   awsParams['WithDecryption'] = true;
+  if (yargs.f === 'default') {
+    getParamList = [];
+  }
+  if (yargs.f === 'simple') {
+    getParamList = {};
+  }
   const getAWSParams = (token) => {
     if (token) awsParams['NextToken'] = token;
     ssm.getParametersByPath(awsParams, (err, data) => {
@@ -44,11 +55,18 @@ const getParams = async (yargs) => {
             // redact certificate values for consistent formatting when listing to table
             data.Parameters[i].Value = 'CERT REDACTED';
           }
-          getParamList.push({
-            key: data.Parameters[i].Name.replace(`/${yargs.p}/`, ''),
-            value: data.Parameters[i].Value,
-            type: data.Parameters[i].Type,
-          });
+          if (yargs.f === 'default') {
+            getParamList.push({
+              key: data.Parameters[i].Name.replace(`/${yargs.p}/`, ''),
+              value: data.Parameters[i].Value,
+              type: data.Parameters[i].Type,
+            });
+          }
+          if (yargs.f === 'simple') {
+            // Generating key:value array for saving as single JSON object in a file
+            getParamList[data.Parameters[i].Name.replace(`/${yargs.p}/`, '')] = data.Parameters[i].Value;
+          }
+
         }
         if (data.NextToken) {
           getAWSParams(data.NextToken);
